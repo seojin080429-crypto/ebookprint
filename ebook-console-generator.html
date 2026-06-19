@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ebook → 콘솔 코드 생성기</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212b;
+    --line: #2a2f3a;
+    --text: #e6e8ec;
+    --dim: #8b919e;
+    --term: #4ade80;
+    --term-dim: #2f7d4f;
+    --warn: #fbbf24;
+    --accent: #5b8def;
+    --mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header { margin-bottom: 32px; }
+  .crumb {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--term-dim);
+    margin-bottom: 12px;
+  }
+  .crumb b { color: var(--term); }
+  h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  h1 .sep { color: var(--term); font-weight: 400; }
+  .lead { margin-top: 10px; color: var(--dim); font-size: 15px; max-width: 56ch; }
+
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    background: var(--term-dim);
+    color: #fff;
+    border-radius: 6px;
+    flex: none;
+  }
+  .step-title { font-size: 15px; font-weight: 600; }
+  .hint { font-size: 13px; color: var(--dim); margin-bottom: 12px; }
+
+  textarea, input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 11px 12px;
+  }
+  textarea { min-height: 92px; resize: vertical; line-height: 1.6; }
+  textarea:focus, input:focus { outline: none; border-color: var(--accent); }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row .col { flex: 1; min-width: 130px; }
+  .col label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .detected {
+    margin-top: 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    display: none;
+  }
+  .detected.show { display: block; }
+  .detected .ln { display: flex; gap: 8px; padding: 2px 0; }
+  .detected .k { color: var(--dim); min-width: 70px; }
+  .detected .v { color: var(--term); word-break: break-all; }
+  .detected.bad .v { color: var(--warn); }
+
+  .mode {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .mode button {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px;
+    background: var(--bg);
+    color: var(--dim);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mode button.on { background: var(--term-dim); color: #fff; border-color: var(--term-dim); }
+
+  .out-wrap { position: relative; margin-top: 4px; }
+  pre {
+    background: #0a0c10;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    padding-top: 44px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--term);
+    overflow-x: auto;
+    white-space: pre;
+    min-height: 80px;
+  }
+  pre .muted { color: var(--dim); }
+  .copy {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--term-dim);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .copy:hover { background: var(--term); color: #0a0c10; }
+  .copy.done { background: var(--accent); }
+
+  .guide {
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-size: 14px;
+  }
+  .guide h3 { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; font-family: var(--mono); }
+  .guide ol { margin-left: 18px; }
+  .guide li { margin-bottom: 8px; color: var(--text); }
+  .guide code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--term);
+  }
+  .note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--dim);
+    border-left: 2px solid var(--line);
+    padding-left: 14px;
+    line-height: 1.6;
+  }
+  .note b { color: var(--warn); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="crumb">F12 → Network → Copy URLs → <b>여기</b> → Console</div>
+    <h1>ebook 페이지 <span class="sep">→</span> 콘솔 코드 생성기</h1>
+    <p class="lead">이미지 URL 하나만 붙여넣으면 경로·접두사·자릿수를 자동 분석하고, 콘솔에 그대로 붙여넣을 코드를 만들어줍니다. 직접 구매·접근 권한이 있는 자료의 개인 소장용으로 사용하세요.</p>
+  </header>
+
+  <!-- STEP 1 -->
+  <div class="step">
+    <div class="step-head"><span class="num">1</span><span class="step-title">이미지 URL 붙여넣기</span></div>
+    <p class="hint">아무 페이지 이미지 URL 하나면 충분합니다. 여러 줄을 붙여넣어도 첫 유효한 줄에서 패턴을 잡습니다.</p>
+    <textarea id="urls" placeholder="https://www.book-sk.co.kr/.../page-images/page-983c19e5-8815797b-0005.jpg"></textarea>
+    <div class="detected" id="detected"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step">
+    <div class="step-head"><span class="num">2</span><span class="step-title">범위 입력</span></div>
+    <div class="row">
+      <div class="col">
+        <label>시작 페이지</label>
+        <input type="number" id="start" value="1" min="1">
+      </div>
+      <div class="col">
+        <label>끝 페이지</label>
+        <input type="number" id="end" value="249" min="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step">
+    <div class="step-head"><span class="num">3</span><span class="step-title">방식 선택 후 코드 복사</span></div>
+    <div class="mode">
+      <button class="on" data-mode="print">새 탭 + 인쇄 (권장)</button>
+      <button data-mode="download">개별 저장</button>
+    </div>
+    <p class="hint" id="modeHint">모든 이미지를 먼저 받은 뒤 새 탭을 열고 인쇄창을 자동으로 띄웁니다. 로딩 끊김 없이 'PDF로 저장'만 누르면 됩니다.</p>
+    <div class="out-wrap">
+      <button class="copy" id="copy">복사</button>
+      <pre id="output"></pre>
+    </div>
+  </div>
+
+  <!-- GUIDE -->
+  <div class="guide">
+    <h3>사용 순서</h3>
+    <ol>
+      <li>ebook 뷰어 탭에서 <code>F12</code> → <b style="color:var(--text)">Console</b> 탭 열기</li>
+      <li>붙여넣기가 막혀 있으면 콘솔에 <code>allow pasting</code> 입력 후 Enter</li>
+      <li>위에서 복사한 코드를 붙여넣고 Enter</li>
+      <li>(새 탭 방식) 새 탭에서 <b style="color:var(--text)">끝까지 한 번 스크롤</b>해 이미지를 모두 로딩 → <code>Ctrl+P</code> → 'PDF로 저장'</li>
+    </ol>
+  </div>
+
+  <p class="note">
+    <b>확인:</b> URL이 <code style="color:var(--term)">0004</code>처럼 중간 번호부터 시작하면, 표지·앞부분이 <code style="color:var(--term)">0001</code>부터 있는지 확인하고 시작 페이지를 맞추세요. 페이지가 많아 새 탭이 버벅이면 범위를 절반씩 나눠 두 번 뽑은 뒤 합치면 됩니다.
+  </p>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let pattern = null;   // { base, prefix, pad, ext }
+let mode = "print";
+
+// URL 패턴 분석
+function parseURL(line) {
+  line = line.trim();
+  const m = line.match(/^(https?:\/\/.*\/)([^\/]*?)(\d+)(\.[a-zA-Z0-9]+)(?:[?#].*)?$/);
+  if (!m) return null;
+  return { base: m[1], prefix: m[2], pad: m[3].length, ext: m[4] };
+}
+
+function analyze() {
+  const lines = $('#urls').value.split(/\s+/).filter(Boolean);
+  pattern = null;
+  for (const l of lines) {
+    const p = parseURL(l);
+    if (p) { pattern = p; break; }
+  }
+  const box = $('#detected');
+  if (pattern) {
+    box.className = "detected show";
+    box.innerHTML =
+      `<div class="ln"><span class="k">경로</span><span class="v">${escapeHtml(pattern.base)}</span></div>` +
+      `<div class="ln"><span class="k">접두사</span><span class="v">${escapeHtml(pattern.prefix)}</span></div>` +
+      `<div class="ln"><span class="k">번호</span><span class="v">${pattern.pad}자리 (예: ${"0".repeat(pattern.pad-1)}1)</span></div>` +
+      `<div class="ln"><span class="k">확장자</span><span class="v">${pattern.ext}</span></div>`;
+  } else if ($('#urls').value.trim()) {
+    box.className = "detected show bad";
+    box.innerHTML = `<div class="ln"><span class="v">패턴을 찾지 못했어요. 끝이 …숫자.jpg 형태인 이미지 URL인지 확인하세요.</span></div>`;
+  } else {
+    box.className = "detected";
+  }
+  render();
+}
+
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function render() {
+  const out = $('#output');
+  if (!pattern) { out.innerHTML = '<span class="muted">// 1단계에서 URL을 붙여넣으면 코드가 여기에 생성됩니다.</span>'; return; }
+  const start = Math.max(1, parseInt($('#start').value) || 1);
+  const end   = Math.max(start, parseInt($('#end').value) || start);
+
+  const cfg =
+`  const BASE   = ${JSON.stringify(pattern.base)};
+  const PREFIX = ${JSON.stringify(pattern.prefix)};
+  const EXT    = ${JSON.stringify(pattern.ext)};
+  const START  = ${start};
+  const END    = ${end};
+  const PAD    = ${pattern.pad};
+  const pad = n => String(n).padStart(PAD, "0");`;
+
+  let code;
+  if (mode === "print") {
+    code =
+`(async () => {
+${cfg}
+
+  // 1) 모든 이미지를 미리 fetch (lazy-load 끊김 방지)
+  console.log("이미지 받는 중... (잠시만요)");
+  const urls = [];
+  for (let i = START; i <= END; i++) urls.push(BASE + PREFIX + pad(i) + EXT);
+
+  const dataURLs = [];
+  let done = 0;
+  for (const url of urls) {
+    try {
+      const blob = await (await fetch(url)).blob();
+      dataURLs.push(await new Promise(r => {
+        const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob);
+      }));
+    } catch (e) {
+      dataURLs.push(null);
+      console.warn("실패: " + url);
+    }
+    done++;
+    if (done % 10 === 0 || done === urls.length) console.log("[" + done + "/" + urls.length + "]");
+  }
+
+  // 2) 받은 이미지를 새 탭에 박아넣기 (이미 dataURL이라 추가 로딩 없음)
+  let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ebook</title>'
+    + '<style>@page{size:auto;margin:0}html,body{margin:0;padding:0}'
+    + 'img{display:block;width:100%;page-break-after:always}</style></head><body>';
+  for (const d of dataURLs) { if (d) html += '<img src="' + d + '">'; }
+  html += '</body></html>';
+
+  const w = window.open("", "_blank");
+  if (!w) { console.error("팝업이 차단됐습니다. 팝업 허용 후 다시 실행하세요."); return; }
+  w.document.write(html);
+  w.document.close();
+
+  // 3) 렌더 끝나면 자동으로 인쇄창 띄우기
+  w.onload = () => setTimeout(() => w.print(), 600);
+  console.log("완료! 새 탭에서 인쇄창이 뜨면 '대상'을 'PDF로 저장'으로 선택하세요.");
+})();`;
+  } else {
+    code =
+`(async () => {
+${cfg}
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = START; i <= END; i++) {
+    const url = BASE + PREFIX + pad(i) + EXT;
+    try {
+      const blob = await (await fetch(url)).blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = pad(i) + EXT;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      console.log("[" + i + "/" + END + "] saved");
+      await sleep(250);
+    } catch (e) {
+      console.warn("[" + i + "/" + END + "] 실패: " + e.message);
+    }
+  }
+  console.log("완료. 받은 이미지를 PDF로 합치세요.");
+})();`;
+  }
+  out.textContent = code;
+}
+
+// 이벤트
+$('#urls').addEventListener('input', analyze);
+$('#start').addEventListener('input', render);
+$('#end').addEventListener('input', render);
+
+document.querySelectorAll('.mode button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.mode button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    mode = b.dataset.mode;
+    $('#modeHint').textContent = mode === "print"
+      ? "모든 이미지를 먼저 받은 뒤 새 탭을 열고 인쇄창을 자동으로 띄웁니다. 로딩 끊김 없이 'PDF로 저장'만 누르면 됩니다."
+      : "각 이미지를 개별 파일로 내려받습니다. 받은 이미지들을 따로 PDF로 합치면 됩니다. (다운로드가 한 번에 많이 뜰 수 있어요)";
+    render();
+  };
+});
+
+$('#copy').onclick = () => {
+  if (!pattern) return;
+  navigator.clipboard.writeText($('#output').textContent).then(() => {
+    const c = $('#copy');
+    c.textContent = "복사됨 ✓"; c.classList.add('done');
+    setTimeout(() => { c.textContent = "복사"; c.classList.remove('done'); }, 1500);
+  });
+};
+
+// 초기 렌더
+render();
+</script>
+</body>
+</html>
