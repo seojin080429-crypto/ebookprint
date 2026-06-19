@@ -171,9 +171,30 @@
     padding: 18px 20px;
     font-size: 14px;
   }
-  .guide h3 { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; font-family: var(--mono); }
-  .guide ol { margin-left: 18px; }
-  .guide li { margin-bottom: 8px; color: var(--text); }
+  .guide h3 { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; font-family: var(--mono); }
+  .phase { margin-bottom: 22px; }
+  .phase:last-of-type { margin-bottom: 0; }
+  .phase-title {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 14px; font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .badge {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    width: 22px; height: 22px; flex: none;
+    display: grid; place-items: center;
+    background: var(--accent); color: #fff;
+    border-radius: 6px;
+  }
+  .guide ol { margin-left: 20px; }
+  .guide li { margin-bottom: 7px; color: var(--text); font-size: 14px; }
+  .guide li b { color: #fff; }
+  .tip {
+    margin-top: 9px; margin-left: 4px;
+    font-size: 13px; color: var(--dim);
+    border-left: 2px solid var(--line);
+    padding-left: 11px; line-height: 1.55;
+  }
   .guide code {
     font-family: var(--mono);
     font-size: 12px;
@@ -240,17 +261,45 @@
 
   <!-- GUIDE -->
   <div class="guide">
-    <h3>사용 순서</h3>
-    <ol>
-      <li>ebook 뷰어 탭에서 <code>F12</code> → <b style="color:var(--text)">Console</b> 탭 열기</li>
-      <li>붙여넣기가 막혀 있으면 콘솔에 <code>allow pasting</code> 입력 후 Enter</li>
-      <li>위에서 복사한 코드를 붙여넣고 Enter</li>
-      <li>(새 탭 방식) 새 탭에서 <b style="color:var(--text)">끝까지 한 번 스크롤</b>해 이미지를 모두 로딩 → <code>Ctrl+P</code> → 'PDF로 저장'</li>
-    </ol>
+    <h3>전체 사용 방법 (처음부터 끝까지)</h3>
+
+    <div class="phase">
+      <div class="phase-title"><span class="badge">A</span> F12로 이미지 링크 복사하기</div>
+      <ol>
+        <li>ebook 뷰어가 열린 탭에서 <code>F12</code>를 눌러 개발자 도구를 엽니다. (안 열리면 <code>Ctrl</code>+<code>Shift</code>+<code>I</code>)</li>
+        <li>상단 탭 중 <b>Network</b>(네트워크)를 클릭합니다.</li>
+        <li>그 아래 필터 칸에 <code>page-images</code> 라고 입력합니다. (페이지 이미지만 걸러줍니다)</li>
+        <li>ebook에서 <b>페이지를 두세 장 넘깁니다.</b> 그러면 목록에 <code>...0005.jpg</code> 같은 이미지 요청들이 줄줄이 뜹니다.</li>
+        <li>목록의 아무 항목이나 <b>우클릭 → Copy → Copy URL</b>을 누릅니다. (이미지 URL 하나가 복사됩니다)</li>
+      </ol>
+      <p class="tip">목록이 비어 있으면 페이지를 더 넘기거나, F12를 연 채로 <code>F5</code>로 새로고침한 뒤 다시 넘겨보세요.</p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-title"><span class="badge">B</span> 위에서 코드 만들기</div>
+      <ol>
+        <li><b>1단계 칸</b>에 방금 복사한 URL을 붙여넣습니다. → 경로·접두사 등이 자동으로 분석됩니다.</li>
+        <li><b>2단계</b>에서 <b>끝 페이지</b>를 책의 총 페이지 수로 맞춥니다. (시작은 보통 1)</li>
+        <li><b>3단계</b>에서 <b>'새 탭 + 인쇄'</b>를 선택하고 <b>복사</b> 버튼을 누릅니다.</li>
+      </ol>
+    </div>
+
+    <div class="phase">
+      <div class="phase-title"><span class="badge">C</span> 콘솔에 붙여넣어 PDF 만들기</div>
+      <ol>
+        <li>F12 개발자 도구에서 이번엔 <b>Console</b>(콘솔) 탭으로 이동합니다.</li>
+        <li>처음이면 붙여넣기가 막혀 있습니다. 콘솔에 <code>allow pasting</code> 을 직접 타이핑하고 Enter. (한 번만 하면 됩니다)</li>
+        <li>복사한 코드를 붙여넣고 <code>Enter</code>를 칩니다.</li>
+        <li>콘솔에 <code>[10/249]</code>, <code>[20/249]</code>... 진행 표시가 뜹니다. <b>끝까지 기다립니다.</b> (1~2분)</li>
+        <li>다 받으면 <b>새 탭이 열리고 인쇄창이 자동으로 뜹니다.</b></li>
+        <li>인쇄창에서 <b>'대상(프린터)'을 'PDF로 저장'</b>으로 바꾸고 <b>저장</b>을 누릅니다. 끝!</li>
+      </ol>
+      <p class="tip">팝업이 차단됐다는 메시지가 뜨면, 주소창 오른쪽의 팝업 차단 아이콘을 눌러 '허용'한 뒤 코드를 다시 실행하세요.</p>
+    </div>
   </div>
 
   <p class="note">
-    <b>확인:</b> URL이 <code style="color:var(--term)">0004</code>처럼 중간 번호부터 시작하면, 표지·앞부분이 <code style="color:var(--term)">0001</code>부터 있는지 확인하고 시작 페이지를 맞추세요. 페이지가 많아 새 탭이 버벅이면 범위를 절반씩 나눠 두 번 뽑은 뒤 합치면 됩니다.
+    <b>막히면 이렇게:</b> ① URL이 <code style="color:var(--term)">0004</code>처럼 중간부터면 표지가 <code style="color:var(--term)">0001</code>부터 있는지 확인하고 시작 페이지를 맞추세요. ② 페이지가 많아 탭이 멈추거나 인쇄가 깨지면 범위를 <code style="color:var(--term)">1~125</code>, <code style="color:var(--term)">126~249</code>로 나눠 두 번 뽑고 PDF를 합치세요. ③ 직접 구매·접근 권한이 있는 자료의 개인 소장용으로만 사용하세요.
   </p>
 </div>
 
